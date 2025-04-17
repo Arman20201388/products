@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Botoria - Professional E-commerce Sales Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <style>
+        body {
+            font-family: 'Segoe UI', 'Vazirmatn', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        [lang="fa"] {
+            direction: rtl;
+            font-family: 'Vazirmatn', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        [lang="en"] {
+            direction: ltr;
+        }
+        .rtl {
+            direction: rtl;
+        }
+        .ltr {
+            direction: ltr;
+        }
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .stat-card {
+            border-left: 4px solid;
+        }
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #888;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        .sales-item {
+            transition: all 0.5s ease;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .badge-new {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .gauge {
+            width: 100%;
+            height: 8px;
+            background-color: #e6e6e6;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .gauge-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Header -->
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center">
+                <div class="flex items-center justify-center w-10 h-10 bg-blue-600 text-white rounded-lg mr-3">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <h1 class="text-xl font-bold text-gray-800">Botoria <span class="text-gray-500 text-sm">Enterprise Dashboard</span></h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-2 ml-4">
+                    <button onclick="switchLanguage('en')" class="px-2 py-1 rounded-md text-sm bg-gray-100 hover:bg-gray-200">EN</button>
+                    <button onclick="switchLanguage('fa')" class="px-2 py-1 rounded-md text-sm bg-gray-100 hover:bg-gray-200">فا</button>
+                </div>
+                <div class="hidden md:flex items-center">
+                    <div class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm flex items-center">
+                        <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        <span data-translate="system_online">System Online</span>
+                    </div>
+                </div>
+                <div class="hidden md:block text-right">
+                    <p class="text-sm text-gray-600" data-translate="last_update">Last update:</p>
+                    <p class="text-sm font-semibold" id="last-update">Loading...</p>
+                </div>
+                <div class="relative">
+                    <button class="flex items-center focus:outline-none">
+                        <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-2">
+                            <i class="fas fa-user text-gray-500"></i>
+                        </div>
+                        <span class="hidden md:inline-block text-gray-700 font-medium">Admin</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Dashboard Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800" data-translate="dashboard_title">Sales Dashboard</h2>
+                <p class="text-gray-600" data-translate="dashboard_subtitle">Real-time monitoring of Botoria's e-commerce performance</p>
+            </div>
+            <div class="flex mt-4 md:mt-0 space-x-3">
+                <select id="timeframe-selector" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="today" data-translate="timeframes.today">Today</option>
+                    <option value="week" selected data-translate="timeframes.week">This Week</option>
+                    <option value="month" data-translate="timeframes.month">This Month</option>
+                    <option value="year" data-translate="timeframes.year">This Year</option>
+                </select>
+                <button class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm flex items-center hover:bg-blue-700 transition">
+                    <i class="fas fa-download mr-2"></i>
+                    <span data-translate="export_report">Export Report</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Sales -->
+            <div class="card bg-white p-6 stat-card" style="border-color: #4F46E5;">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium" data-translate="total_sales">Total Sales</p>
+                        <h3 class="text-2xl font-bold mt-1" id="total-sales">R$ 950.00</h3>
+                        <div class="flex items-center mt-2">
+                            <span class="text-green-500 text-sm font-medium flex items-center">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                <span id="sales-increase">8.5%</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-full bg-indigo-100 text-indigo-600">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Orders -->
+            <div class="card bg-white p-6 stat-card" style="border-color: #10B981;">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium" data-translate="total_orders">Total Orders</p>
+                        <h3 class="text-2xl font-bold mt-1" id="total-orders">10</h3>
+                        <div class="flex items-center mt-2">
+                            <span class="text-green-500 text-sm font-medium flex items-center">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                <span id="orders-increase">8.0%</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-full bg-green-100 text-green-600">
+                        <i class="fas fa-box"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Order Value -->
+            <div class="card bg-white p-6 stat-card" style="border-color: #F59E0B;">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium" data-translate="avg_order">Avg. Order Value</p>
+                        <h3 class="text-2xl font-bold mt-1" id="avg-order">R$ 95.00</h3>
+                        <div class="flex items-center mt-2">
+                            <span class="text-green-500 text-sm font-medium flex items-center">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                <span id="aov-increase">3.8%</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversion Rate -->
+            <div class="card bg-white p-6 stat-card" style="border-color: #EC4899;">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-sm text-gray-500 font-medium" data-translate="conversion_rate">Conversion Rate</p>
+                        <h3 class="text-2xl font-bold mt-1" id="conversion-rate">3.42%</h3>
+                        <div class="flex items-center mt-2">
+                            <span class="text-red-500 text-sm font-medium flex items-center">
+                                <i class="fas fa-arrow-down mr-1"></i>
+                                <span id="conversion-decrease">0.5%</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-3 rounded-full bg-pink-100 text-pink-600">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts & Tables Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
+            <!-- Recent Sales -->
+            <div class="card bg-white p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-gray-800" data-translate="recent_sales">Recent Sales</h3>
+                    <a href="#" class="text-sm text-blue-600 hover:underline" data-translate="view_all">View All</a>
+                </div>
+                <div id="recent-sales" class="h-80 overflow-y-auto scrollbar-thin">
+                    <!-- Sales will be populated here by JavaScript -->
+                    <div class="animate-pulse">
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="h-12 w-12 bg-gray-200 rounded-md"></div>
+                            <div class="flex-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                            <div class="h-4 bg-gray-200 rounded w-16"></div>
+                        </div>
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="h-12 w-12 bg-gray-200 rounded-md"></div>
+                            <div class="flex-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                            <div class="h-4 bg-gray-200 rounded w-16"></div>
+                        </div>
+                        <div class="flex items-center space-x-3 mb-4">
+                            <div class="h-12 w-12 bg-gray-200 rounded-md"></div>
+                            <div class="flex-1">
+                                <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            </div>
+                            <div class="h-4 bg-gray-200 rounded w-16"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-8">
+            <!-- Regional Sales Distribution -->
+            <div class="card bg-white p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-bold text-gray-800" data-translate="regional_distribution">Regional Distribution</h3>
+                    <div class="text-xs text-gray-500" data-translate="based_on_sales">Based on sales volume</div>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 w-1/4 text-sm font-medium text-gray-700">São Paulo</div>
+                        <div class="flex-grow">
+                            <div class="gauge">
+                                <div class="gauge-fill bg-blue-500" style="width: 38%;"></div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 w-1/6 text-right text-sm font-medium text-gray-700">38%</div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 w-1/4 text-sm font-medium text-gray-700">Rio de Janeiro</div>
+                        <div class="flex-grow">
+                            <div class="gauge">
+                                <div class="gauge-fill bg-green-500" style="width: 24%;"></div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 w-1/6 text-right text-sm font-medium text-gray-700">24%</div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 w-1/4 text-sm font-medium text-gray-700">Minas Gerais</div>
+                        <div class="flex-grow">
+                            <div class="gauge">
+                                <div class="gauge-fill bg-yellow-500" style="width: 14%;"></div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 w-1/6 text-right text-sm font-medium text-gray-700">14%</div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 w-1/4 text-sm font-medium text-gray-700">Bahia</div>
+                        <div class="flex-grow">
+                            <div class="gauge">
+                                <div class="gauge-fill bg-red-500" style="width: 11%;"></div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 w-1/6 text-right text-sm font-medium text-gray-700">11%</div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 w-1/4 text-sm font-medium text-gray-700">Rio Grande do Sul</div>
+                        <div class="flex-grow">
+                            <div class="gauge">
+                                <div class="gauge-fill bg-purple-500" style="width: 7%;"></div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 w-1/6 text-right text-sm font-medium text-gray-700">7%</div>
+                    </div>
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 w-1/4 text-sm font-medium text-gray-700">Other</div>
+                        <div class="flex-grow">
+                            <div class="gauge">
+                                <div class="gauge-fill bg-gray-500" style="width: 6%;"></div>
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 w-1/6 text-right text-sm font-medium text-gray-700">6%</div>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <div class="h-48">
+                        <canvas id="regional-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white py-4 border-t">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p>© 2024 Botoria E-commerce Platform. All Rights Reserved.</p>
+            <p class="mt-1">Version 4.8.2 | <span data-translate="last_update">Last database sync</span>: <span id="db-sync-time">Loading...</span></p>
+        </div>
+    </footer>
+
+    <script>
+        // Amazon Brazil products database (simulated)
+        const amazonProducts = [
+            { 
+                id: 'BR001', 
+                name: 'Echo Dot (3ª Geração)', 
+                price: 89.99, 
+                category: 'Smart Speakers',
+                image: 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/br.svg'
+            },
+            { 
+                id: 'BR002', 
+                name: 'Fire TV Stick Lite', 
+                price: 95.90, 
+                category: 'Streaming Devices',
+                image: 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/br.svg'
+            },
+            { 
+                id: 'BR003', 
+                name: 'Kindle 10ª Geração', 
+                price: 99.00, 
+                category: 'E-readers',
+                image: 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/br.svg'
+            },
+            { 
+                id: 'BR004', 
+                name: 'Smart Lâmpada LED', 
+                price: 45.99, 
+                category: 'Smart Home',
+                image: 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/br.svg'
+            },
+            { 
+                id: 'BR005', 
+                name: 'Fone de Ouvido Basic', 
+                price: 29.90, 
+                category: 'Headphones',
+                image: 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/br.svg'
+            },
+            { 
+                id: 'BR006', 
+                name: 'Carregador USB 20W', 
+                price: 19.99, 
+                category: 'Accessories',
+                image: 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/br.svg'
+            },
+            { 
+                id: 'BR007', 
+                name: 'Cabo USB Type-C', 
+                price: 15.50, 
+                category: 'Accessories',
+                image: 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/br.svg'
+            },
+            { 
+                id: 'BR008', 
+                name: 'Mouse Sem Fio', 
+                price: 35.90, 
+                category: 'Computer Accessories',
+                image: 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/br.svg'
+            },
+            { 
+                id: 'BR009', 
+                name: 'Teclado Básico USB', 
+                price: 49.90, 
+                category: 'Computer Accessories',
+                image: 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/br.svg'
+            },
+            { 
+                id: 'BR010', 
+                name: 'Webcam HD', 
+                price: 89.90, 
+                category: 'Computer Accessories',
+                image: 'https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.11.0/flags/4x3/br.svg'
+            }
+        ];
+
+        // Recent sales list (initial data - simulating 2 hours of activity)
+        const recentSales = [
+            { 
+                id: 'S92843', 
+                product: amazonProducts[0], 
+                timestamp: new Date(Date.now() - 7 * 60000).toISOString(), 
+                customer: 'Gabriel Silva',
+                isNew: false 
+            },
+            { 
+                id: 'S92842', 
+                product: amazonProducts[3], 
+                timestamp: new Date(Date.now() - 22 * 60000).toISOString(), 
+                customer: 'Ana Oliveira',
+                isNew: false 
+            },
+            { 
+                id: 'S92841', 
+                product: amazonProducts[5], 
+                timestamp: new Date(Date.now() - 45 * 60000).toISOString(), 
+                customer: 'Lucas Santos',
+                isNew: false 
+            },
+            { 
+                id: 'S92840', 
+                product: amazonProducts[7], 
+                timestamp: new Date(Date.now() - 67 * 60000).toISOString(),
+                customer: 'Isabella Costa', 
+                isNew: false 
+            },
+            { 
+                id: 'S92839', 
+                product: amazonProducts[9], 
+                timestamp: new Date(Date.now() - 98 * 60000).toISOString(), 
+                customer: 'Mateus Almeida',
+                isNew: false 
+            }
+        ];
+
+        // Sales Chart Data
+        const salesData = {
+            daily: {
+                labels: ['16:00', '16:15', '16:30', '16:45', '17:00', '17:15', '17:30', '17:45', '18:00'],
+                datasets: [{
+                    label: 'Sales (R$)',
+                    data: [
+                        0,      // Start
+                        99.00,  // First sale - Kindle
+                        89.99,  // Second sale - Echo Dot
+                        45.99,  // Third sale - Smart Lâmpada
+                        19.99,  // Fourth sale - Carregador USB
+                        35.90,  // Fifth sale - Mouse
+                        0,      // Current
+                        0,      // Future
+                        0       // Future
+                    ],
+                    borderColor: '#4F46E5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            weekly: {
+                labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                datasets: [{
+                    label: 'Sales (R$)',
+                    data: [1049, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#4F46E5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            monthly: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Sales (R$)',
+                    data: [0, 0, 0, 1049, 0, 0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#4F46E5',
+                    backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            }
+        };
+
+        // Regional distribution chart data
+        const regionalData = {
+            labels: ['São Paulo', 'Rio de Janeiro', 'Minas Gerais', 'Bahia', 'Rio Grande do Sul', 'Other'],
+            datasets: [{
+                data: [38, 24, 14, 11, 7, 6],
+                backgroundColor: [
+                    'rgba(79, 70, 229, 0.7)',
+                    'rgba(16, 185, 129, 0.7)',
+                    'rgba(245, 158, 11, 0.7)',
+                    'rgba(239, 68, 68, 0.7)',
+                    'rgba(168, 85, 247, 0.7)',
+                    'rgba(107, 114, 128, 0.7)'
+                ],
+                borderWidth: 0
+            }]
+        };
+
+        // Initialize the sales chart
+        let salesChart;
+        function initSalesChart(period = 'daily') {
+            const ctx = document.getElementById('sales-chart').getContext('2d');
+            
+            if (salesChart) {
+                salesChart.destroy();
+            }
+            
+            salesChart = new Chart(ctx, {
+                type: 'line',
+                data: salesData[period],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 150,
+                            ticks: {
+                                display: false
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize the regional chart
+        function initRegionalChart() {
+            const ctx = document.getElementById('regional-chart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: regionalData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                boxWidth: 12,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // Functions to update the dashboard
+        function updateLastUpdateTime() {
+            const now = new Date();
+            document.getElementById('last-update').textContent = now.toLocaleString('en-US', { 
+                weekday: 'short',
+                day: '2-digit', 
+                month: 'short', 
+                year: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+        }
+
+        function updateDBSyncTime() {
+            const now = new Date();
+            const minutes = Math.floor(Math.random() * 5) + 1;
+            const syncTime = new Date(now.getTime() - minutes * 60000);
+            document.getElementById('db-sync-time').textContent = syncTime.toLocaleString('en-US', { 
+                day: '2-digit', 
+                month: 'short', 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        // Function to render recent sales
+        function renderRecentSales() {
+            const container = document.getElementById('recent-sales');
+            container.innerHTML = '';
+            
+            recentSales.forEach((sale, index) => {
+                const saleTime = new Date(sale.timestamp);
+                const timeString = saleTime.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+                const dateString = saleTime.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
+                
+                const saleElement = document.createElement('div');
+                saleElement.className = `flex items-center space-x-3 p-3 ${index !== recentSales.length - 1 ? 'border-b' : ''} ${sale.isNew ? 'bg-blue-50 sales-item' : ''}`;
+                
+                saleElement.innerHTML = `
+                    <div class="h-10 w-10 flex-shrink-0 bg-gray-100 rounded-md overflow-hidden">
+                        <img src="${sale.product.image}" class="h-10 w-10 object-cover">
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between">
+                            <div class="text-sm font-medium text-gray-900">${sale.product.name}</div>
+                            ${sale.isNew ? '<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-0.5 rounded badge-new">NEW</span>' : ''}
+                        </div>
+                        <div class="flex items-center text-xs text-gray-500">
+                            <span>${sale.customer}</span>
+                            <span class="mx-1">•</span>
+                            <span>${dateString} ${timeString}</span>
+                        </div>
+                    </div>
+                    <div class="text-sm font-semibold text-gray-900">R$ ${sale.product.price.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                `;
+                
+                container.appendChild(saleElement);
+            });
+        }
+
+        // Function to add a new sale
+        function addNewSale() {
+            const randomProduct = amazonProducts[Math.floor(Math.random() * amazonProducts.length)];
+            
+            const firstNames = ['Gabriel', 'Ana', 'Lucas', 'Isabella', 'Mateus', 'Sophia', 'Pedro', 'Julia'];
+            const lastNames = ['Silva', 'Oliveira', 'Santos', 'Costa', 'Almeida', 'Pereira', 'Fernandes'];
+            
+            const randomFirstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const randomLastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+            const customerName = `${randomFirstName} ${randomLastName}`;
+            
+            const lastSaleId = parseInt(recentSales[0].id.substring(1));
+            const newSaleId = 'S' + (lastSaleId + 1);
+            
+            const newSale = {
+                id: newSaleId,
+                product: randomProduct,
+                timestamp: new Date().toISOString(),
+                customer: customerName,
+                isNew: true
+            };
+            
+            recentSales.unshift(newSale);
+            if (recentSales.length > 20) {
+                recentSales.pop();
+            }
+            
+            updateStats(randomProduct.price);
+            renderRecentSales();
+            
+            setTimeout(() => {
+                newSale.isNew = false;
+                renderRecentSales();
+            }, 30000);
+            
+            // Schedule next sale (between 15 minutes to 2 hours, with possibility of two sales)
+            const demoMode = false;
+            
+            let nextSaleDelay;
+            if (demoMode) {
+                nextSaleDelay = (Math.floor(Math.random() * 90) + 30) * 1000;
+            } else {
+                // 50% chance of adding a second sale within 1-5 minutes
+                if (Math.random() > 0.5) {
+                    setTimeout(addNewSale, (Math.floor(Math.random() * 4) + 1) * 60000);
+                }
+                // Next regular sale in 15 minutes to 2 hours
+                nextSaleDelay = (Math.floor(Math.random() * 6300) + 900) * 1000;
+            }
+            
+            setTimeout(addNewSale, nextSaleDelay);
+        }
+
+        // Update statistics when new sales are added
+        let totalSalesValue = 950.00;
+        let totalOrdersCount = 10;
+        
+        function updateStats(newSaleAmount) {
+            // Update total sales value
+            totalSalesValue += newSaleAmount;
+            document.getElementById('total-sales').textContent = `R$ ${totalSalesValue.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            // Update total orders
+            totalOrdersCount += 1;
+            document.getElementById('total-orders').textContent = totalOrdersCount.toLocaleString();
+            
+            // Update average order value
+            const avgOrder = totalSalesValue / totalOrdersCount;
+            document.getElementById('avg-order').textContent = `R$ ${avgOrder.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            
+            // Randomly adjust growth percentages
+            const salesIncrease = (8.5 + (Math.random() * 0.6 - 0.3)).toFixed(1);
+            const ordersIncrease = (8.0 + (Math.random() * 0.4 - 0.2)).toFixed(1);
+            const aovIncrease = (3.8 + (Math.random() * 0.6 - 0.3)).toFixed(1);
+            
+            document.getElementById('sales-increase').textContent = `${salesIncrease}%`;
+            document.getElementById('orders-increase').textContent = `${ordersIncrease}%`;
+            document.getElementById('aov-increase').textContent = `${aovIncrease}%`;
+            
+            updateLastUpdateTime();
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Update timestamps
+            updateLastUpdateTime();
+            updateDBSyncTime();
+            
+            // Render recent sales
+            renderRecentSales();
+            
+            // Start adding sales
+            setTimeout(addNewSale, 5000); // Start first sale after 5 seconds
+        });
+
+        // Simulate database sync every few minutes
+        setInterval(updateDBSyncTime, 180000); // every 3 minutes
+
+        // Language translations
+        const translations = {
+            en: {
+                dashboard_title: "Sales Dashboard",
+                dashboard_subtitle: "Real-time monitoring of Botoria's e-commerce performance",
+                total_sales: "Total Sales",
+                total_orders: "Total Orders",
+                avg_order: "Avg. Order Value",
+                conversion_rate: "Conversion Rate",
+                recent_sales: "Recent Sales",
+                view_all: "View All",
+                top_products: "Top Products",
+                by_revenue: "By Revenue",
+                by_quantity: "By Quantity",
+                regional_distribution: "Regional Distribution",
+                based_on_sales: "Based on sales volume",
+                system_online: "System Online",
+                last_update: "Last update",
+                export_report: "Export Report",
+                timeframes: {
+                    today: "Today",
+                    week: "This Week",
+                    month: "This Month",
+                    year: "This Year"
+                }
+            },
+            fa: {
+                dashboard_title: "داشبورد فروش",
+                dashboard_subtitle: "نظارت بر عملکرد فروشگاه آنلاین بوتوریا در لحظه",
+                total_sales: "مجموع فروش",
+                total_orders: "تعداد سفارشات",
+                avg_order: "میانگین سفارش",
+                conversion_rate: "نرخ تبدیل",
+                recent_sales: "فروش‌های اخیر",
+                view_all: "مشاهده همه",
+                top_products: "محصولات برتر",
+                by_revenue: "بر اساس درآمد",
+                by_quantity: "بر اساس تعداد",
+                regional_distribution: "توزیع منطقه‌ای",
+                based_on_sales: "بر اساس حجم فروش",
+                system_online: "سیستم آنلاین",
+                last_update: "آخرین به‌روزرسانی",
+                export_report: "دریافت گزارش",
+                timeframes: {
+                    today: "امروز",
+                    week: "این هفته",
+                    month: "این ماه",
+                    year: "امسال"
+                }
+            }
+        };
+
+        // Language switcher function
+        function switchLanguage(lang) {
+            document.documentElement.lang = lang;
+            document.querySelectorAll('[data-translate]').forEach(element => {
+                const key = element.getAttribute('data-translate');
+                const translation = key.split('.').reduce((obj, i) => obj[i], translations[lang]);
+                if (translation) {
+                    element.textContent = translation;
+                }
+            });
+            
+            // Update direction based on language
+            if (lang === 'fa') {
+                document.body.classList.add('rtl');
+                document.body.classList.remove('ltr');
+            } else {
+                document.body.classList.add('ltr');
+                document.body.classList.remove('rtl');
+            }
+
+            // Store selected language
+            localStorage.setItem('preferred_language', lang);
+        }
+
+        // Initialize language based on stored preference or browser default
+        document.addEventListener('DOMContentLoaded', function() {
+            const storedLang = localStorage.getItem('preferred_language') || 'en';
+            switchLanguage(storedLang);
+        });
+    </script>
+</body>
+</html>
